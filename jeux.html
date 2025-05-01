@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Jeu de Mots 🎮</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: 
+        url('imajeux.webp') repeat-x,
+        linear-gradient(to right, #fceabb, #f8b500);
+      background-size: auto 100%;
+      animation: defilement 60s linear infinite;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 0;
+    }
+
+    @keyframes defilement {
+      from { background-position: 0 0; }
+      to { background-position: 10000px 0; }
+    }
+
+    .conteneur, .accueil {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      max-width: 500px;
+      width: 50%;
+      height: 30%;
+    }
+
+    .accueil {
+      animation: fadeIn 2s ease-in-out;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 2em;
+    }
+
+    .mot {
+      font-size: 2em;
+      font-weight: bold;
+      margin: 20px 0;
+      color: #444;
+      animation: zoomRotate 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes zoomRotate {
+      from { transform: scale(1) rotate(0deg); }
+      to { transform: scale(1.1) rotate(5deg); }
+    }
+
+    input {
+      padding: 12px;
+      font-size: 1.1em;
+      width: 80%;
+      border: 2px solid #aaa;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    #score, #minuteur {
+      font-size: 1.2em;
+      margin: 10px 0;
+      color: #333;
+    }
+
+    #boutonDemarrer, .boutonNiveau {
+      padding: 12px 24px;
+      font-size: 1.5em;
+      font-weight: bold;
+      background-color: white;
+      color: black;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 20px;
+    }
+
+    #boutonDemarrer:hover, .boutonNiveau:hover {
+      background-color: grey;
+      color: white;
+    }
+
+    #resultats {
+      margin-top: 30px;
+      text-align: left;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .correct {
+      color: green;
+      font-weight: bold;
+      margin: 4px 0;
+    }
+
+    .incorrect {
+      color: red;
+      font-weight: bold;
+      margin: 4px 0;
+    }
+
+    #messageVictoire, #messageDefaite {
+      font-size: 1.8em;
+      font-weight: bold;
+      display: none;
+      margin-top: 20px;
+    }
+
+    #messageVictoire {
+      color: #4CAF50;
+    }
+
+    #messageDefaite {
+      color: #FF6347;
+    }
+
+    .cache {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="accueil" id="accueil">
+    <h1>Bienvenue dans le Jeu de Mots 🎉</h1>
+    <p>Choisis un niveau :</p>
+    <button class="boutonNiveau" onclick="choisirNiveau('facile')">Facile</button>
+    <button class="boutonNiveau" onclick="choisirNiveau('moyen')">Moyen</button>
+    <button class="boutonNiveau" onclick="choisirNiveau('difficile')">Difficile</button>
+  </div>
+
+  <div class="conteneur cache" id="jeu">
+    <h1>Jeu de Mots 🎮</h1>
+    <div id="messageVictoire">
+      🎉 Bravo, tu as gagné ! 🎉<br>
+      <img src="https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif" alt="Victoire" style="width:150px;" />
+    </div>
+    <div id="messageDefaite">
+      😢 Désolé, tu as perdu !<br>
+      <img src="https://media.giphy.com/media/l0MYEqEzwMWFCg8rm/giphy.gif" alt="Défaite" style="width:150px;" />
+    </div>
+    <div class="mot">Cliquez sur "Démarrer le jeu"</div>
+    <input type="text" id="input" placeholder="Tape le mot ici" disabled />
+    <div id="score">Score : 0</div>
+    <div id="minuteur">Temps restant : 0s</div>
+    <button id="boutonDemarrer">Démarrer</button>
+    <div id="resultats"></div>
+  </div>
+
+  <!-- Ajout des balises audio -->
+  <audio id="sonDemarrage" src="Windows XP Startup and Shutdown Sound Son de démarrage et d'arrêt de Windows XP.mp3"></audio>
+  <audio id="sonVictoire" src="Clapping Sound Effects  Applause  Audience  Crowd Sound Effect.mp3"></audio>
+  <audio id="sonDefaite" src="rire_defaite.mp3"></audio>
+
+  <script>
+    const mots = {
+      facile: ["chat", "voiture", "soleil", "livre", "pomme", "stylo", "arbre", "fleur", "table", "chaise"],
+      moyen: ["ordinateur", "internet", "musique", "bouteille", "fenêtre", "téléphone", "montagne", "aventure", "voyage", "histoire"],
+      difficile: ["extravagant", "phénoménal", "équilibriste", "kaleidoscope", "xylophone", "quintessence", "paradoxalement", "inconstitutionnellement", "anticonstitutionnellement", "hippopotomonstrosesquippedaliophobie"]
+    };
+
+    const input = document.getElementById("input");
+    const motEl = document.querySelector(".mot");
+    const scoreEl = document.getElementById("score");
+    const minuteurEl = document.getElementById("minuteur");
+    const boutonDemarrer = document.getElementById("boutonDemarrer");
+    const resultatsEl = document.getElementById("resultats");
+    const messageVictoire = document.getElementById("messageVictoire");
+    const messageDefaite = document.getElementById("messageDefaite");
+    const accueil = document.getElementById("accueil");
+    const jeu = document.getElementById("jeu");
+
+    // Récupération des sons
+    const sonDemarrage = document.getElementById("sonDemarrage");
+    const sonVictoire = document.getElementById("sonVictoire");
+    const sonDefaite = document.getElementById("sonDefaite");
+
+    let motActuel = "";
+    let score = 0;
+    let temps;
+    let totalMots = 0;
+    let reponses = [];
+    let niveau = "facile";
+    let interval;
+    let jeuFini = false;
+
+    function choisirNiveau(n) {
+      niveau = n;
+      temps = n === "facile" ? 20 : n === "moyen" ? 25 : 40;
+      accueil.classList.add("cache");
+      jeu.classList.remove("cache");
+    }
+
+    function demarrerJeu() {
+      sonDemarrage.play(); // Joue le son de démarrage
+      score = 0;
+      totalMots = 0;
+      jeuFini = false;
+      reponses = [];
+      input.disabled = false;
+      input.value = "";
+      input.style.display = "inline-block";
+      messageVictoire.style.display = "none";
+      messageDefaite.style.display = "none";
+      boutonDemarrer.style.display = "none";
+      scoreEl.textContent = "Score : 0";
+      nouveauMot();
+      mettreAJourMinuteur();
+      interval = setInterval(() => {
+        temps--;
+        mettreAJourMinuteur();
+        if (temps <= 0) finJeu();
+      }, 1000);
+    }
+
+    function mettreAJourMinuteur() {
+      minuteurEl.textContent = `Temps restant : ${temps}s`;
+    }
+
+    function nouveauMot() {
+      const listeMots = mots[niveau];
+      motActuel = listeMots[Math.floor(Math.random() * listeMots.length)];
+      motEl.textContent = motActuel;
+      input.focus();
+      totalMots++;
+    }
+
+    function verifierMot() {
+      if (jeuFini) return;
+      const saisi = input.value.trim().toLowerCase();
+      if (saisi === motActuel.toLowerCase()) {
+        score++;
+        scoreEl.textContent = `Score : ${score}`;
+        reponses.push({ mot: motActuel, correct: true });
+      } else {
+        reponses.push({ mot: motActuel, correct: false });
+      }
+      nouveauMot();
+      input.value = "";
+    }
+
+    function finJeu() {
+      jeuFini = true;
+      input.disabled = true;
+      clearInterval(interval);
+      input.style.display = "none";
+      motEl.textContent = "⏰ Temps écoulé !";
+      minuteurEl.textContent = `⏱ Score final : ${score} / ${totalMots}`;
+      resultatsEl.innerHTML = "<h3>Résultats :</h3>";
+      reponses.forEach(rep => {
+        const ligne = document.createElement("div");
+        ligne.textContent = rep.mot;
+        ligne.className = rep.correct ? "correct" : "incorrect";
+        resultatsEl.appendChild(ligne);
+      });
+
+      if (score >= totalMots / 2) {
+        sonVictoire.play(); // Joue le son de victoire
+        messageVictoire.style.display = "block";
+      } else {
+        sonDefaite.play(); // Joue le son de défaite
+        messageDefaite.style.display = "block";
+      }
+
+      boutonDemarrer.textContent = "Rejouer";
+      boutonDemarrer.style.display = "inline-block";
+    }
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") verifierMot();
+    });
+
+    boutonDemarrer.addEventListener("click", demarrerJeu);
+  </script>
+</body>
+</html>
